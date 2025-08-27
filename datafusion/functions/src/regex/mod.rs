@@ -27,6 +27,7 @@ pub mod regexpinstr;
 pub mod regexplike;
 pub mod regexpmatch;
 pub mod regexpreplace;
+pub mod regexpextract;
 
 // create UDFs
 make_udf_function!(regexpcount::RegexpCountFunc, regexp_count);
@@ -34,6 +35,7 @@ make_udf_function!(regexpinstr::RegexpInstrFunc, regexp_instr);
 make_udf_function!(regexpmatch::RegexpMatchFunc, regexp_match);
 make_udf_function!(regexplike::RegexpLikeFunc, regexp_like);
 make_udf_function!(regexpreplace::RegexpReplaceFunc, regexp_replace);
+make_udf_function!(regexpextract::RegexpExtractFunc, regexp_extract);
 
 pub mod expr_fn {
     use datafusion_expr::Expr;
@@ -125,6 +127,7 @@ pub fn functions() -> Vec<Arc<datafusion_expr::ScalarUDF>> {
         regexp_instr(),
         regexp_like(),
         regexp_replace(),
+        regexp_extract(),
     ]
 }
 
