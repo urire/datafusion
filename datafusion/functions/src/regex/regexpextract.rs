@@ -1,3 +1,30 @@
+//! Implementation of `regexp_extract` scalar function.
+//!
+//! ## Design reasoning
+//!
+//! Chose to implement this function as a `ScalarUDFImpl` so it integrates
+//! consistently with other regex UDFs (`regexp_match`, `regexp_replace`, etc.).
+//! 
+//! A few dilemmas considered during implementation:
+//!
+//! 1. **Input/Output types**:  
+//!    To keep the first version simpler and consistent with existing regex UDFs,
+//!    we restricted the types to `Utf8`.
+//!
+//! 2. **Return on missing groups**:  
+//!    If the regex compiles but the capture group is missing, we return
+//!    an empty string (`""`).
+//!
+//! 3. **Flags handling**:
+//!    Allow an optional fourth argument for flags. Right now we only
+//!    support simple pass-through to Rust’s `regex` crate.  
+//!    Future improvements might add SQL-standard flags (`i`, `c`, etc.).
+//!
+//! ## Run 
+//! 
+//! `cargo test -p datafusion-functions test_case_sensitive_regexp_extract_scalar`
+//! 
+
 use datafusion_expr::{
     ColumnarValue, ScalarUDFImpl, Signature, Volatility, TypeSignature::Exact
 };
@@ -7,6 +34,12 @@ use arrow::datatypes::{
 };
 use datafusion_common::{exec_err, Result, ScalarValue};
 
+/// Implements the SQL function `regexp_extract(string, pattern, idx[, flags])`.
+///
+/// * Extracts the substring matching a regex capture group.
+/// * `idx=0` returns the full match; higher indices return capture groups.
+/// * Returns `""` if the group is not found.
+/// * Returns an error if `pattern` is invalid.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct RegexpExtractFunc {
     signature: Signature,
@@ -105,10 +138,10 @@ mod tests {
 
     #[test]
     fn test_case_sensitive_regexp_extract_scalar() {
-        let values = ["", "100-200", "100-200"];
-        let regex = [r"(\d+)-(\d+)", r"(\d+)-(\d+)", r"(\d+)-(\d+)"];
-        let idx = [0,1,2];
-        let expected = ["", "100", "200"];
+        let values = ["", "100-200", "100-200", "100-200"];
+        let regex = [r"(\d+)-(\d+)", r"(\d+)-(\d+)", r"(\d+)-(\d+)", r"(\d+)-(\d+)"];
+        let idx = [0,1,2,0];
+        let expected = ["", "100", "200", "100-200"];
         let udf = RegexpExtractFunc::new();
         
         values.iter().enumerate().for_each(|(pos, &v)| {
